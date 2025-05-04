@@ -1,0 +1,43 @@
+services:
+  hive:
+    image: hadoop_hive
+    container_name: hive_server
+    hostname: hive_server
+    ports:
+      - "10000:10000"   # HiveServer2
+      - "10002:10002"   # Beeline (opcional)
+      - "9870:9870"     # HDFS Namenode Web UI
+      - "9864:9864"     # HDFS Namenode Web UI
+
+    environment:
+      - HIVE_METASTORE_HOST=hive-metastore-db
+      - HIVE_METASTORE_PORT=9083
+      - TZ=America/Sao_Paulo
+    volumes:
+      - ./hive_data:/data
+    networks:
+      hive_net:
+        ipv4_address: 172.25.0.10
+
+  metastore-db:
+    image: mysql:8.0.30
+    container_name: hive-metastore-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: metastore
+      MYSQL_USER: hive
+      MYSQL_PASSWORD: hive
+      TZ: America/Sao_Paulo
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./metastore_db:/var/lib/mysql
+    networks:
+      hive_net:
+        ipv4_address: 172.25.0.11
+networks:
+  hive_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
