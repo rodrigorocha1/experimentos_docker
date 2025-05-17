@@ -1,7 +1,9 @@
 FROM openjdk:8-jdk
 
+
 ENV JAVA_HOME=/usr/local/openjdk-8
 ENV PATH=$JAVA_HOME/bin:$PATH
+
 
 ENV HADOOP_VERSION=3.4.1
 ENV HADOOP_HOME=/home/hadoop/apache/hadoop
@@ -14,7 +16,7 @@ RUN apt-get update && apt-get install -y wget ssh rsync sudo && \
 # Cria usuário hadoop com permissão sudo sem senha
 RUN useradd -m -s /bin/bash hadoop && echo "hadoop ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Define usuário hadoop para as próximas instruções
+# Troca para usuário hadoop para instalar Hadoop e configurar ambiente
 USER hadoop
 WORKDIR /home/hadoop
 
@@ -28,30 +30,23 @@ RUN mkdir -p /home/hadoop/apache && \
 # Cria diretórios para persistência do HDFS
 RUN mkdir -p /home/hadoop/hdfs/namenode /home/hadoop/hdfs/datanode
 
-# Ajusta permissões para usuário hadoop - aqui é preciso usar sudo pois usuário é hadoop
+# Ajusta permissões para usuário hadoop
 RUN sudo chown -R hadoop:hadoop /home/hadoop/hdfs /home/hadoop/apache
 
 # Gera chave SSH para o usuário hadoop (necessário para Hadoop)
 RUN ssh-keygen -t rsa -P "" -f /home/hadoop/.ssh/id_rsa && \
     cat /home/hadoop/.ssh/id_rsa.pub >> /home/hadoop/.ssh/authorized_keys && \
-    chmod 600 /home/hadoop/.ssh/authorized_keys
+    chmod 0600 /home/hadoop/.ssh/authorized_keys
 
-# Copia arquivos de configuração do Hadoop com permissão correta (como root)
-USER root
-COPY core-site.xml $HADOOP_HOME/etc/hadoop/core-site.xml
-COPY hdfs-site.xml $HADOOP_HOME/etc/hadoop/hdfs-site.xml
-COPY yarn-site.xml $HADOOP_HOME/etc/hadoop/yarn-site.xml
-COPY mapred-site.xml $HADOOP_HOME/etc/hadoop/mapred-site.xml
-
-# Ajusta permissão dos arquivos copiados
-RUN chown hadoop:hadoop $HADOOP_HOME/etc/hadoop/*.xml
+# Copia arquivos de configuração do Hadoop com permissão correta
+COPY --chown=hadoop:hadoop core-site.xml $HADOOP_HOME/etc/hadoop/core-site.xml
+COPY --chown=hadoop:hadoop hdfs-site.xml $HADOOP_HOME/etc/hadoop/hdfs-site.xml
+COPY --chown=hadoop:hadoop yarn-site.xml $HADOOP_HOME/etc/hadoop/yarn-site.xml
+COPY --chown=hadoop:hadoop mapred-site.xml $HADOOP_HOME/etc/hadoop/mapred-site.xml
 
 # Copia o script de entrypoint e dá permissão de execução
-COPY entrypoint.sh /home/hadoop/entrypoint.sh
-RUN chown hadoop:hadoop /home/hadoop/entrypoint.sh && chmod +x /home/hadoop/entrypoint.sh
-
-# Define usuário hadoop novamente para rodar o container
-USER hadoop
+COPY --chown=hadoop:hadoop entrypoint.sh /home/hadoop/entrypoint.sh
+RUN chmod +x /home/hadoop/entrypoint.sh
 
 # Expõe as portas padrão dos serviços Hadoop
 EXPOSE 9870 9864 8088 8042

@@ -1,4 +1,4 @@
-version: '3'
+
 
 services:
   namenode:
@@ -6,18 +6,20 @@ services:
     container_name: namenode
     hostname: namenode
     volumes:
-      - ./namenode_data:/hadoop/dfs/name
+      - ./namenode_data:/home/hadoop/hdfs/namenode
     ports:
-      - "9870:9870" # UI NameNode
-      - "9000:9000" # RPC do NameNode
-    networks:
-      - hadoop_network
+      - "9870:9870"  # UI NameNode
+      - "9000:9000"  # RPC do NameNode
     command: >
       bash -c "
-      hdfs namenode -format -force &&
-      start-dfs.sh &&
+      # O entrypoint já formata se necessário, só iniciar DFS
+      /home/hadoop/sbin/start-dfs.sh &&
       tail -f /dev/null
       "
+    restart: unless-stopped
+    networks:
+      hadoop_network:
+        ipv4_address: 172.20.0.10
 
   datanode:
     image: hadoop_separado:latest
@@ -26,28 +28,32 @@ services:
     depends_on:
       - namenode
     volumes:
-      - ./datanode_data:/hadoop/dfs/data
-    networks:
-      - hadoop_network
+      - ./datanode_data:/home/hadoop/hdfs/datanode
     command: >
       bash -c "
-      start-dfs.sh &&
+      /home/hadoop/sbin/hadoop-daemon.sh start datanode &&
       tail -f /dev/null
       "
+    restart: unless-stopped
+    networks:
+      hadoop_network:
+        ipv4_address: 172.20.0.11
 
   resourcemanager:
     image: hadoop_separado:latest
     container_name: resourcemanager
     hostname: resourcemanager
     ports:
-      - "8088:8088" # UI ResourceManager
-    networks:
-      - hadoop_network
+      - "8088:8088"  # UI ResourceManager
     command: >
       bash -c "
-      start-yarn.sh &&
+      /home/hadoop/sbin/yarn-daemon.sh start resourcemanager &&
       tail -f /dev/null
       "
+    restart: unless-stopped
+    networks:
+      hadoop_network:
+        ipv4_address: 172.20.0.12
 
   nodemanager:
     image: hadoop_separado:latest
@@ -55,18 +61,23 @@ services:
     hostname: nodemanager
     depends_on:
       - resourcemanager
-    networks:
-      - hadoop_network
     command: >
       bash -c "
-      yarn nodemanager &&
+      /home/hadoop/sbin/yarn-daemon.sh start nodemanager &&
       tail -f /dev/null
       "
+    restart: unless-stopped
+    networks:
+      hadoop_network:
+        ipv4_address: 172.20.0.13
 
 volumes:
   namenode_data:
-  datanodes_data:
+  datanode_data:
 
 networks:
   hadoop_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
