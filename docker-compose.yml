@@ -1,6 +1,6 @@
 services:
   hive:
-    image: hadoop_hive
+    image: hadoop_hive_v5
     container_name: hive_server
     hostname: hive_server
     ports:
@@ -35,6 +35,24 @@ services:
     networks:
       hive_net:
         ipv4_address: 172.25.0.11
+
+  dbt_hive:
+    image: ghcr.io/dbt-labs/dbt-core:1.10.0b2 
+    container_name: dbt_hive
+    volumes:
+      - ./dbt:/usr/app/dbt  
+    working_dir: /usr/app/dbt
+    entrypoint: /bin/sh
+    command: -c "apt-get update && \
+                 apt-get install -y gcc g++ libkrb5-dev && \
+                 pip install dbt-hive && \
+                 tail -f /dev/null"
+    networks:
+        hive_net:
+          ipv4_address: 172.25.0.12
+
+
+
 networks:
   hive_net:
     driver: bridge

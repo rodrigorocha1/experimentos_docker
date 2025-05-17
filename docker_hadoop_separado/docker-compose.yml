@@ -1,0 +1,72 @@
+version: '3'
+
+services:
+  namenode:
+    image: hadoop_separado:latest
+    container_name: namenode
+    hostname: namenode
+    volumes:
+      - ./namenode_data:/hadoop/dfs/name
+    ports:
+      - "9870:9870" # UI NameNode
+      - "9000:9000" # RPC do NameNode
+    networks:
+      - hadoop_network
+    command: >
+      bash -c "
+      hdfs namenode -format -force &&
+      start-dfs.sh &&
+      tail -f /dev/null
+      "
+
+  datanode:
+    image: hadoop_separado:latest
+    container_name: datanode
+    hostname: datanode
+    depends_on:
+      - namenode
+    volumes:
+      - ./datanode_data:/hadoop/dfs/data
+    networks:
+      - hadoop_network
+    command: >
+      bash -c "
+      start-dfs.sh &&
+      tail -f /dev/null
+      "
+
+  resourcemanager:
+    image: hadoop_separado:latest
+    container_name: resourcemanager
+    hostname: resourcemanager
+    ports:
+      - "8088:8088" # UI ResourceManager
+    networks:
+      - hadoop_network
+    command: >
+      bash -c "
+      start-yarn.sh &&
+      tail -f /dev/null
+      "
+
+  nodemanager:
+    image: hadoop_separado:latest
+    container_name: nodemanager
+    hostname: nodemanager
+    depends_on:
+      - resourcemanager
+    networks:
+      - hadoop_network
+    command: >
+      bash -c "
+      yarn nodemanager &&
+      tail -f /dev/null
+      "
+
+volumes:
+  namenode_data:
+  datanodes_data:
+
+networks:
+  hadoop_network:
+    driver: bridge
