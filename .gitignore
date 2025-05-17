@@ -2,3 +2,5 @@
 /hive_data
 /metastore_db
 *.tar
+teste_hive_persistencia_volume/warehouse/pessoas/.000000_0.crc
+teste_hive_persistencia_volume/warehouse/pessoas/000000_0
