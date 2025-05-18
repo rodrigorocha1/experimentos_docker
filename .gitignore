@@ -1,5 +1,7 @@
 /hadoop_hive.tar
 /hive_data
+/teste_hive_persistencia_volume_mysql/mysqldata/*
+teste_hive_persistencia_volume_mysql/warehouse/*
 /metastore_db
 *.tar
 teste_hive_persistencia_volume/warehouse/pessoas/.000000_0.crc
