@@ -1,0 +1,10 @@
+services:
+  dbt-ssh:
+    image: dbt_hive 
+    container_name: dbt_hive_teste
+    command: tail -f /dev/null
+    ports:
+      - "2222:22"  # Porta local 2222 mapeada para a porta SSH do container (22)
+    restart: unless-stopped
+    volumes:
+      - ./dbt:/usr/app  
