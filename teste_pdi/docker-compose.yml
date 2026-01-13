@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  pentaho:
+    build: .
+    container_name: pentaho8
+    environment:
+      - JAVA_OPTS=-Xms1024m -Xmx2048m
+    volumes:
+      - ./data:/data
+    ports:
+      - "8000:8000"

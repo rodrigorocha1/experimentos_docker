@@ -1,0 +1,101 @@
+
+
+services:
+ 
+
+  postgres-airflow:
+    image: postgres:13
+    container_name: postgres-airflow
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+ 
+
+  trino-coordinator:
+    container_name: trino
+    image: trinodb/trino:latest
+    hostname: trino-coordinator
+    environment:
+      - TRINO_ENVIRONMENT=production
+    ports:
+      - 8085:8080
+    volumes:
+      - ./config_trino:/etc/trino
+
+  trino-worker:
+    image: trinodb/trino:latest
+    container_name: trino-worker
+    hostname: trino-worker
+    environment:
+      - TRINO_ENVIRONMENT=production
+      - TRINO_DISCOVERY_URI=http://trino-coordinator:8080
+    depends_on:
+      - trino-coordinator
+    volumes:
+      - ./config_trino:/etc/trino
+
+  trino-init:
+    image: trinodb/trino:latest
+    depends_on:
+      - trino-coordinator
+    entrypoint: [ "/bin/sh", "-c", "sleep 30 && trino --server trino-coordinator:8080 -f /docker-entrypoint-initdb.d/create_schemas.sql" ]
+    volumes:
+      - ./init_trino/create_schemas.sql:/docker-entrypoint-initdb.d/create_schemas.sql
+
+
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - 6379:6379
+
+  superset-db:
+    image: postgres:13
+    container_name: superset-db
+    environment:
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+      POSTGRES_DB: superset
+    volumes:
+      - superset-db-data:/var/lib/postgresql/data
+
+  superset:
+    build:
+      context: .
+      dockerfile: ./config_superset/superset.Dockerfile
+    container_name: superset
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      PYTHONPATH: /app/pythonpath
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+      POSTGRES_DB: superset
+      POSTGRES_HOST: superset-db
+    volumes:
+      - ./config_superset:/app/pythonpath
+      - superset-data:/app/superset_home
+    ports:
+      - 8088:8088
+    depends_on:
+      - redis
+      - superset-db
+    entrypoint:
+      - sh
+      - -c
+      - |
+        superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin && \
+        superset db upgrade && \
+        superset init && \
+        superset run --host 0.0.0.0 -p 8088 --with-threads --reload
+
+volumes:
+  postgres_data:
+  superset-data:
+  superset-db-data:

@@ -1,0 +1,18 @@
+services:
+  pentaho:
+    image: stiang/pentaho-kettle:8.3
+    container_name: pentaho8_vnc
+    environment:
+      - USER=admin
+      - PASSWORD=password
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+      - VNC_PASSWORD=secret
+    ports:
+      - "5901:5901"    # Porta VNC para conectar via cliente VNC
+      - "6080:6080"    # Porta Web VNC (noVNC)
+    volumes:
+      - ./data:/data
+    command: >
+      sh -c "sh /opt/data-integration/spoon.sh & \
+             x11vnc -forever -usepw -create -display :0 -rfbport 5901 & \
+             websockify -D 6080 localhost:5901"

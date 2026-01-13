@@ -1,0 +1,3 @@
+mkdir -p cursos_sql_server
+sudo chown -R 10001:0 cursos_sql_server
+sudo chmod -R 770 cursos_sql_server
